@@ -1276,6 +1276,7 @@ contains
           fcansno      =>    waterdiagnosticbulk_inst%fcansno_patch       , & ! Input:  [real(r8) (:)   ]  fraction of canopy that is snow-covered (0 to 1) 
 
           elai         =>    canopystate_inst%elai_patch         , & ! Input:  [real(r8) (:)   ]  one-sided leaf area index with burying by snow
+          eci          =>    canopystate_inst%tci_patch          , & ! Input:[real(r8) (:)   ]  one-sided clumping index without burying by snow
           esai         =>    canopystate_inst%esai_patch         , & ! Input:  [real(r8) (:)   ]  one-sided stem area index with burying by snow
 
           tlai_z       =>    surfalb_inst%tlai_z_patch           , & ! Input:  [real(r8) (:,:) ]  tlai increment for canopy layer       
@@ -1425,9 +1426,11 @@ contains
           ! Absorbed, reflected, transmitted fluxes per unit incoming radiation
           ! for full canopy
 
-          t1 = min(h*(elai(p)+esai(p)), 40._r8)
+          ! t1 = min(h*(elai(p)+esai(p)), 40._r8)
+          t1 = min(h*(elai(p)+esai(p))*eci(p), 40._r8)
           s1 = exp(-t1)!!!add clumping index
-          t1 = min(twostext(p)*(elai(p)+esai(p)), 40._r8)
+          !t1 = min(twostext(p)*(elai(p)+esai(p)), 40._r8)
+          t1 = min(twostext(p)*(elai(p)+esai(p))*eci(p), 40._r8)
           s2 = exp(-t1)
 
           ! Direct beam
@@ -1476,7 +1479,8 @@ contains
              + h5         * (1._r8 - s2*s1) / (twostext(p) + h) &
              + h6         * (1._r8 - s2/s1) / (twostext(p) - h)
           if ( .not. lSFonly )then
-            fabd_sun(p,ib) = (1._r8 - omega(p,ib)) * ( 1._r8 - s2 + 1._r8 / avmu(p) * (a1 + a2) )
+            !fabd_sun(p,ib) = (1._r8 - omega(p,ib)) * ( 1._r8 - s2 + 1._r8 / avmu(p) * (a1 + a2) )
+            fabd_sun(p,ib) = (1._r8 - omega(p,ib)) * ( 1._r8 - s2 + 1._r8 /avmu(p) * (a1 + a2)*eci(p) )
             fabd_sha(p,ib) = fabd(p,ib) - fabd_sun(p,ib)
           end if
 
@@ -1513,8 +1517,8 @@ contains
 
             a1 = h7 * (1._r8 - s2*s1) / (twostext(p) + h) +  h8 * (1._r8 - s2/s1) / (twostext(p) - h)
             a2 = h9 * (1._r8 - s2*s1) / (twostext(p) + h) + h10 * (1._r8 - s2/s1) / (twostext(p) - h)
-
-            fabi_sun(p,ib) = (1._r8 - omega(p,ib)) / avmu(p) * (a1 + a2)
+            !fabi_sun(p,ib) = (1._r8 - omega(p,ib)) / avmu(p) * (a1 + a2)
+            fabi_sun(p,ib) = (1._r8 - omega(p,ib)) / avmu(p) * (a1 + a2)*eci(p)
             fabi_sha(p,ib) = fabi(p,ib) - fabi_sun(p,ib)
   
             ! Repeat two-stream calculations for each canopy layer to calculate derivatives.
@@ -1531,7 +1535,8 @@ contains
                if (nlevcan == 1) then
   
                   ! sunlit fraction of canopy
-                  fsun_z(p,1) = (1._r8 - s2) / t1
+                  !fsun_z(p,1) = (1._r8 - s2) / t1
+                  fsun_z(p,1) = (1._r8 - s2) / t1*eci(p)
   
                   ! absorbed PAR (per unit sun/shade lai+sai)
                   laisum = elai(p)+esai(p)
@@ -1543,7 +1548,8 @@ contains
                   ! leaf to canopy scaling coefficients
                   extkn = 0.30_r8
                   extkb = twostext(p)
-                  vcmaxcintsun(p) = (1._r8 - exp(-(extkn+extkb)*elai(p))) / (extkn + extkb)
+                  !vcmaxcintsun(p) = (1._r8 - exp(-(extkn+extkb)*elai(p))) / (extkn + extkb)
+                  vcmaxcintsun(p) = (1._r8 - exp(-(extkn+extkb*eci(p))*elai(p)))*eci(p) / (extkn +extkb*eci(p))
                   vcmaxcintsha(p) = (1._r8 - exp(-extkn*elai(p))) / extkn - vcmaxcintsun(p)
                   if (elai(p)  >  0._r8) then
                     vcmaxcintsun(p) = vcmaxcintsun(p) / (fsun_z(p,1)*elai(p))
