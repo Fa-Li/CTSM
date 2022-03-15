@@ -1426,7 +1426,7 @@ contains
           ! for full canopy
 
           t1 = min(h*(elai(p)+esai(p)), 40._r8)
-          s1 = exp(-t1)
+          s1 = exp(-t1)!!!add clumping index
           t1 = min(twostext(p)*(elai(p)+esai(p)), 40._r8)
           s2 = exp(-t1)
 
