@@ -25,6 +25,7 @@ module CanopyStateType
      integer  , pointer :: frac_veg_nosno_alb_patch (:)   ! patch fraction of vegetation not covered by snow (0 OR 1) [-]
 
      real(r8) , pointer :: tlai_patch               (:)   ! patch canopy one-sided leaf area index, no burying by snow
+     real(r8) , pointer :: tci_patch                (:)   ! patch canopy one-sided clumping index, no burying by snow
      real(r8) , pointer :: tsai_patch               (:)   ! patch canopy one-sided stem area index, no burying by snow
      real(r8) , pointer :: elai_patch               (:)   ! patch canopy one-sided leaf area index with burying by snow
      real(r8) , pointer :: esai_patch               (:)   ! patch canopy one-sided stem area index with burying by snow
@@ -118,6 +119,7 @@ contains
     allocate(this%frac_veg_nosno_patch     (begp:endp))           ; this%frac_veg_nosno_patch     (:)   = huge(1)
     allocate(this%frac_veg_nosno_alb_patch (begp:endp))           ; this%frac_veg_nosno_alb_patch (:)   = 0
     allocate(this%tlai_hist_patch          (begp:endp))           ; this%tlai_hist_patch          (:)   = nan
+    allocate(this%tci_patch                (begp:endp))           ; this%tci_patch                (:)   = nan
     allocate(this%tsai_hist_patch          (begp:endp))           ; this%tsai_hist_patch          (:)   = nan
     allocate(this%htop_hist_patch          (begp:endp))           ; this%htop_hist_patch          (:)   = nan
     allocate(this%tlai_patch               (begp:endp))           ; this%tlai_patch               (:)   = nan
@@ -172,7 +174,10 @@ contains
     call hist_addfld1d (fname='ELAI', units='m^2/m^2', &
         avgflag='A', long_name='exposed one-sided leaf area index', &
          ptr_patch=this%elai_patch)
-
+    this%tci_patch(begp:endp) = spval
+    call hist_addfld1d (fname='TCI', units='m^2/m^2', &
+         avgflag='A', long_name='total projected clumping index', &
+         ptr_patch=this%tci_patch)
     this%esai_patch(begp:endp) = spval
     call hist_addfld1d (fname='ESAI', units='m^2/m^2', &
          avgflag='A', long_name='exposed one-sided stem area index', &
@@ -512,6 +517,7 @@ contains
        l = patch%landunit(p)
 
        this%tlai_patch(p)        = 0._r8
+       this%tci_patch(p)         = 0._r8
        this%tsai_patch(p)        = 0._r8
        this%elai_patch(p)        = 0._r8
        this%esai_patch(p)        = 0._r8
@@ -565,6 +571,10 @@ contains
     call restartvar(ncid=ncid, flag=flag, varname='tlai', xtype=ncd_double,  &
          dim1name='pft', long_name='one-sided leaf area index, no burying by snow', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%tlai_patch)
+
+    call restartvar(ncid=ncid, flag=flag, varname='tci', xtype=ncd_double,  &
+         dim1name='pft', long_name='one-sided clumping index, no burying by snow', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%tci_patch)
 
     call restartvar(ncid=ncid, flag=flag, varname='tsai', xtype=ncd_double,  &
          dim1name='pft', long_name='one-sided stem area index, no burying by snow', units='', &
