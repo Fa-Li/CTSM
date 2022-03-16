@@ -67,6 +67,7 @@ contains
     ier = 0
     if (.not.allocated(mlai2t)) then
        allocate (mlai2t(bounds%begp:bounds%endp,2), &
+                 mci2t(bounds%begp:bounds%endp,2), &
                  msai2t(bounds%begp:bounds%endp,2), &
                  mhvt2t(bounds%begp:bounds%endp,2), &
                  mhvb2t(bounds%begp:bounds%endp,2), stat=ier)
@@ -77,6 +78,7 @@ contains
     end if
 
     mlai2t(bounds%begp : bounds%endp, :) = nan
+    mci2t(bounds%begp : bounds%endp, :)  = nan
     msai2t(bounds%begp : bounds%endp, :) = nan
     mhvt2t(bounds%begp : bounds%endp, :) = nan
     mhvb2t(bounds%begp : bounds%endp, :) = nan
@@ -120,6 +122,7 @@ contains
          frac_sno           => waterdiagnosticbulk_inst%frac_sno_col   , & ! Input:  [real(r8) (:) ] fraction of ground covered by snow (0 to 1)
          snow_depth         => waterdiagnosticbulk_inst%snow_depth_col , & ! Input:  [real(r8) (:) ] snow height (m)
          tlai               => canopystate_inst%tlai_patch    ,          & ! Output: [real(r8) (:) ] one-sided leaf area index, no burying by snow
+         tci                => canopystate_inst%tci_patch    ,           & ! Output: [real(r8) (:) ] one-sided clumping index, no burying by snow
          tsai               => canopystate_inst%tsai_patch    ,          & ! Output: [real(r8) (:) ] one-sided stem area index, no burying by snow
          elai               => canopystate_inst%elai_patch    ,          & ! Output: [real(r8) (:) ] one-sided leaf area index with burying by snow
          esai               => canopystate_inst%esai_patch    ,          & ! Output: [real(r8) (:) ] one-sided stem area index with burying by snow
@@ -154,6 +157,7 @@ contains
 
          if (.not. use_lai_streams) then
             tlai(p) = timwt(1)*mlai2t(p,1) + timwt(2)*mlai2t(p,2)
+            tci(p)  = timwt(1)*mci2t(p,1) + timwt(2)*mci2t(p,2)
          endif
 
          tsai(p) = timwt(1)*msai2t(p,1) + timwt(2)*msai2t(p,2)
@@ -385,6 +389,7 @@ contains
     integer :: ier                        ! error code
     logical :: readvar
     real(r8), pointer :: mlai(:,:)        ! lai read from input files
+    real(r8), pointer :: mci(:,:)         ! ci read from input files
     real(r8), pointer :: msai(:,:)        ! sai read from input files
     real(r8), pointer :: mhgtt(:,:)       ! top vegetation height
     real(r8), pointer :: mhgtb(:,:)       ! bottom vegetation height
@@ -395,6 +400,7 @@ contains
 
     allocate(&
          mlai(bounds%begg:bounds%endg,0:maxveg), &
+         mci(bounds%begg:bounds%endg,0:numpft), &
          msai(bounds%begg:bounds%endg,0:maxveg), &
          mhgtt(bounds%begg:bounds%endg,0:maxveg), &
          mhgtb(bounds%begg:bounds%endg,0:maxveg), &
@@ -418,6 +424,9 @@ contains
             nt=months(k), readvar=readvar)
        if (.not. readvar) call endrun(msg=' ERROR: MONTHLY_LAI NOT on fveg file'//errMsg(sourcefile, __LINE__))
 
+       call ncd_io(ncid=ncid, varname='CI', flag='read', data=mci, dim1name=grlnd, &
+            nt=months(k), readvar=readvar)
+       if (.not. readvar) call endrun(msg=' ERROR: CI NOT on fveg file'//errMsg(sourcefile, __LINE__))
        call ncd_io(ncid=ncid, varname='MONTHLY_SAI', flag='read', data=msai, dim1name=grlnd, &
             nt=months(k), readvar=readvar)
        if (.not. readvar) call endrun(msg=' ERROR: MONTHLY_SAI NOT on fveg file'//errMsg(sourcefile, __LINE__))
@@ -440,6 +449,7 @@ contains
              do l = 0, maxveg
                 if (l == patch%itype(p)) then
                    mlai2t(p,k) = mlai(g,l)
+                   mci2t(p,k)  = mci(g,l)
                    msai2t(p,k) = msai(g,l)
                    mhvt2t(p,k) = mhgtt(g,l)
                    mhvb2t(p,k) = mhgtb(g,l)
@@ -447,6 +457,7 @@ contains
              end do
           else                        ! non-vegetated pft
              mlai2t(p,k) = 0._r8
+             mci2t(p,k)  = 0._r8
              msai2t(p,k) = 0._r8
              mhvt2t(p,k) = 0._r8
              mhvb2t(p,k) = 0._r8
@@ -464,7 +475,7 @@ contains
        write(iulog,*)
     end if
 
-    deallocate(mlai, msai, mhgtt, mhgtb)
+    deallocate(mlai, mci, msai, mhgtt, mhgtb)
 
     do p = bounds%begp,bounds%endp
        canopystate_inst%mlaidiff_patch(p) = mlai2t(p,1)-mlai2t(p,2)
