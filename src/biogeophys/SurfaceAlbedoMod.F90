@@ -1566,9 +1566,9 @@ contains
   
                      ! Coefficients s1 and s2 depend on cumulative lai+sai. s2 is the sunlit fraction
      
-                     t1 = min(h*laisum, 40._r8)
+                     t1 = min(h*laisum*eci(p), 40._r8)
                      s1 = exp(-t1)
-                     t1 = min(twostext(p)*laisum, 40._r8)
+                     t1 = min(twostext(p)*laisum*eci(p), 40._r8)
                      s2 = exp(-t1)
                      fsun_z(p,iv) = s2
   
@@ -1617,7 +1617,7 @@ contains
      
                      d_ftid = -twostext(p)*h4/sigma*s2 - h*h5*s1 + h*h6/s1 + dh5*s1 + dh6/s1
                      d_fabd = -(dh2+dh3) + (1._r8-albgrd(c,ib))*twostext(p)*s2 - (1._r8-albgri(c,ib))*d_ftid
-                     d_fabd_sun = (1._r8 - omega(p,ib)) * (twostext(p)*s2 + 1._r8 / avmu(p) * (da1 + da2))
+                     d_fabd_sun = (1._r8 - omega(p,ib)) * (twostext(p)*s2 + 1._r8*eci(p) / avmu(p) * (da1 + da2))
                      d_fabd_sha = d_fabd - d_fabd_sun
   
                      fabd_sun_z(p,iv) = max(d_fabd_sun, 0._r8)
@@ -1673,7 +1673,7 @@ contains
   
                      d_ftii = -h * h9 * s1 + h * h10 / s1 + dh9 * s1 + dh10 / s1
                      d_fabi = -(dh7+dh8) - (1._r8-albgri(c,ib))*d_ftii
-                     d_fabi_sun = (1._r8 - omega(p,ib)) / avmu(p) * (da1 + da2)
+                     d_fabi_sun = (1._r8 - omega(p,ib))*eci(p) / avmu(p) * (da1 + da2)
                      d_fabi_sha = d_fabi - d_fabi_sun
   
                      fabi_sun_z(p,iv) = max(d_fabi_sun, 0._r8)
